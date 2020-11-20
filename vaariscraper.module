@@ -1,0 +1,67 @@
+<?php
+/**
+ * @file vaariscraper.module
+ * @author Joonas Heinonen
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function vaariscraper_menu() {
+    $items = array();
+
+    $items['vaariscraper/scrape'] = array (
+        'title' => 'Vaari Scraper',
+        'description' => 'Web Scraping Tool',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('vaariscraper_form'),
+        'access callback' => TRUE
+    );
+
+    return $items;
+}
+
+/**
+ * Implements hook_form().
+ */
+function vaariscraper_form($form, &$form_state) {
+    $form = array();
+
+    $form['values']['link'] = array(
+        '#type' => 'textfield',
+        '#title' => 'URL Field',
+        '#description' => 'Paste your URL here!',
+        '#size' => 40,
+        '#required' => TRUE,
+    );
+
+    $form['values']['submit_button'] = array(
+        '#type' => 'submit',
+        '#value' => t('Click here!'),
+    );
+    
+    return $form;
+}
+
+/**
+ * Submit handler for the calculate_form. Inserts entry into the database
+ */
+function vaariscraper_form_submit($form, &$form_state) {
+
+    $ca_id = db_insert('scraped_website')
+        ->fields(array(
+            'website_url' => $form_state['values']['link'],
+            'website_url_scraped' => scrape_website_url($form_state['values']['link']),
+        ))
+        ->execute();
+
+    drupal_set_message(t('The given website has been scraped!'));
+}
+
+/**
+ * Function to implement website scraping.
+ */
+function scrape_website_url($website_url) {
+    return $website_url . '_websiteScraped!';
+} 
+?>

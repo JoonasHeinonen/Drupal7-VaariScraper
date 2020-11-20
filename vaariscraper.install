@@ -1,0 +1,41 @@
+<?php
+
+/**
+ * Implements hook_schema().
+ */
+function vaariscraper_schema() {
+    $schema = array();
+
+    $schema['scraped_website'] = array(
+        'description' => 'Table for scraped websites.',
+        'fields' => array(
+            'sw_id' => array(
+                'description' => 'The primary identifier for a scraped URL.',
+                'type' => 'serial',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+            ),
+            'website_url' => array(
+                'description' => 'The website URL to be scraped.',
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => TRUE,
+                'default' => '',
+            ),
+            'website_url_scraped' => array(
+                'description' => 'The scraped website according to given URL.',
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => TRUE,
+                'default' => '',
+            ),
+        ),
+        'indexes' => array(
+          'website_url_changed' => array('website_url'),
+        ),
+        'primary key' => array('sw_id',),
+    );
+    
+    return $schema;
+}
+?>

@@ -1,0 +1,5 @@
+name = Vaari Scraper Module
+description = A module developed for web scraping purposes.
+core = 7.x
+version = 7.x
+package = Vaari Modules
