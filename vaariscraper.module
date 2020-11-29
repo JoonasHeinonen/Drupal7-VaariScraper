@@ -10,12 +10,29 @@
 function vaariscraper_menu() {
     $items = array();
 
-    $items['vaariscraper/scrape'] = array (
+    $items['vaariscraper'] = array(
         'title' => 'Vaari Scraper',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('vaariscraper_help_form'),
+        'access callback' => TRUE,
+        'weight' => '-1',
+    );
+
+    $items['vaariscraper/scrape'] = array(
+        'title' => 'Scrape',
         'description' => 'Web Scraping Tool',
         'page callback' => 'drupal_get_form',
         'page arguments' => array('vaariscraper_form'),
-        'access callback' => TRUE
+        'access callback' => TRUE,
+        'type' => MENU_NORMAL_ITEM,
+    );
+
+    $items['vaariscraper/display'] = array(
+        'title' => 'Display',
+        'description' => 'Displays Scraped Websites',
+        'page callback' => array('display_database'),
+        'access callback' => TRUE,
+        'type' => MENU_NORMAL_ITEM,
     );
 
     return $items;
@@ -26,15 +43,6 @@ function vaariscraper_menu() {
  */
 function vaariscraper_form($form, &$form_state) {
     $form = array();
-
-    $form['description'] = array(
-        '#prefix' => '
-                    <div id="description">
-                        <p>Vaari Scraper is a scraping module developed in Drupal 7 as a web development 
-                        <br />tool. It also saves data from the scraped websites to the Drupal installation\'s da-
-                        <br />  tabase.',
-        '#suffix' => '</p></div>',
-    );
 
     $form['values']['link'] = array(
         '#type' => 'textfield',
@@ -136,6 +144,44 @@ function vaariscraper_form($form, &$form_state) {
 }
 
 /**
+ * Implements hook_form().
+ */
+function vaariscraper_help_form($form, &$form_state) {
+    $form = array();
+
+    $form['description'] = array(
+        '#prefix' => '
+                    <div id="description">
+                        <p>Vaari Scraper is a scraping module developed in Drupal 7 as a web development 
+                        <br />tool. It also saves data from the scraped websites to the Drupal installation\'s da-
+                        <br />  tabase.',
+        '#suffix' => '</p></div>',
+    );
+
+    $form['links']['div_0'] = array(
+        '#prefix' => '<p><b>Available links</b><br/></p>',
+    );
+
+    $form['links']['div_0']['display'] = array(
+        '#type' => 'link',
+        '#title' => t('Display'),
+        '#href' => 'vaariscraper/display'
+    );
+
+    $form['links']['div_0']['divider'] = array(
+        '#prefix' => ' / ',
+    );
+
+    $form['links']['div_0']['scrape'] = array(
+        '#type' => 'link',
+        '#title' => t('Scrape'),
+        '#href' => 'vaariscraper/scrape'
+    );
+
+    return $form;
+}
+
+/**
  * Submit handler for the calculate_form. Inserts entry into the database
  */
 function vaariscraper_form_submit($form, &$form_state) {
@@ -161,6 +207,29 @@ function vaariscraper_form_submit($form, &$form_state) {
         ->execute();
     
     drupal_set_message(t('The given website has been scraped with success!'));
+}
+
+/**
+ * Function display_database().
+ */
+function display_database() {
+    $results = db_query('SELECT * FROM {scraped_website}');
+
+    $header = array(t('ID'), t('Website URL'), t('Scraped website'), t('Element type'), t('Element class'), t('Element ID'));
+    $rows = array();
+
+    foreach($results as $result) {
+        $rows[] = array(
+            $result->sw_id,
+            $result->website_url,
+            $result->website_url_scraped,
+            $result->element_type,
+            $result->element_class,
+            $result->element_id
+        );
+    }
+
+    return theme('table', array('header' => $header, 'rows' => $rows));
 }
 
 /**
