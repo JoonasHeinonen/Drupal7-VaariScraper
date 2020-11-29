@@ -27,17 +27,109 @@ function vaariscraper_menu() {
 function vaariscraper_form($form, &$form_state) {
     $form = array();
 
+    $form['description'] = array(
+        '#prefix' => '
+                    <div id="description">
+                        <p>Vaari Scraper is a scraping module developed in Drupal 7 as a web development 
+                        <br />tool. It also saves data from the scraped websites to the Drupal installation\'s da-
+                        <br />  tabase.',
+        '#suffix' => '</p></div>',
+    );
+
     $form['values']['link'] = array(
         '#type' => 'textfield',
         '#title' => 'URL Field',
+        '#attributes' => array(
+            'class' => array('values-elements'),
+        ),
         '#description' => 'Paste your URL here!',
-        '#size' => 40,
+        '#size' => 59,
         '#required' => TRUE,
+    );
+
+    $form['values']['element_andor_class'] = array(
+        '#prefix' => '<div style="display:flex;flex-flow:colomn wrap;">',
+        '#id'     => 'element_andor',
+        '#suffix' => '</div>',
+    );
+
+    $form['values']['element_andor_class']['element_div']['element_type'] = array(
+        '#type' => 'select',
+        '#title' => 'Element Type',
+        "#default_value" => 0,
+        '#attributes' => array(
+            'id' => array('values-element-class_element'), 
+         ),
+        '#options' => array(
+            'Headers' => array(
+                'h1' => t('h1'),
+                'h2' => t('h2'),
+                'h3' => t('h3'),
+                'h4' => t('h4'),
+                'h5' => t('h5'),
+            ),
+            'Paragraph' => array(
+                'p' => t('p'),
+            ),
+            'Horizontal Ruler' => array(
+                'hr' => t('hr'),
+            ),
+            'Link' => array(
+                'a' => t('a'),
+            ),
+            'List items' => array(
+                'ul' => t('ul'),
+                'ol' => t('ol'),
+                'li' => t('li'),
+            ),
+            'Image' => array(
+                'img' => t('img'),
+            ),
+            'Divider' => array(
+                'div' => t('div'),
+            ),
+            'Span' => array(
+                'span' => t('span'),
+            ),
+            'Body' => array(
+                'body' => t('body'),
+            )
+        ),
+        '#description' => 'Choose Element!',
+        '#required' => TRUE,
+    );
+
+    $form['values']['element_andor_class']['class_name'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Element Name (Optional)',
+        '#prefix' => '<div style="margin-left:2em;">',
+        '#suffix' => '</div>',
+        '#placeholder' => t('Element name...'),
+        '#attributes' => array(
+            'class' => array('values-elements'),
+            'id' => array('values-element-class_input'), 
+         ),
+        '#description' => 'Type in a class name!',
+        '#size' => 20,
+    );
+
+    $form['values']['element_andor_class']['id_name'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Element ID (Optional)',
+        '#prefix' => '<div style="margin-left:2em;">',
+        '#suffix' => '</div>',
+        '#placeholder' => t('Class name...'),
+        '#attributes' => array(
+            'class' => array('values-elements'),
+            'id' => array('values-element-class_input'), 
+         ),
+        '#description' => 'Type in element\'s ID!',
+        '#size' => 18,
     );
 
     $form['values']['submit_button'] = array(
         '#type' => 'submit',
-        '#value' => t('Click here!'),
+        '#value' => t('Submit'),
     );
     
     return $form;
@@ -47,21 +139,74 @@ function vaariscraper_form($form, &$form_state) {
  * Submit handler for the calculate_form. Inserts entry into the database
  */
 function vaariscraper_form_submit($form, &$form_state) {
+    $website_url_scraped = scrape_website_url(
+        $form_state['values']['link'], 
+        $form_state['values']['element_type'],
+        $form_state['values']['class_name'],
+        $form_state['values']['id_name'],
+    );
+
+    if ($website_url_scraped === null) {
+        $website_url_scraped = 'No scraping occurred with the given parameters';
+    }
 
     $ca_id = db_insert('scraped_website')
         ->fields(array(
             'website_url' => $form_state['values']['link'],
-            'website_url_scraped' => scrape_website_url($form_state['values']['link']),
+            'website_url_scraped' => $website_url_scraped,
+            'element_type' => $form_state['values']['element_type'],
+            'element_class' => $form_state['values']['class_name'],
+            'element_id' => $form_state['values']['id_name'],
         ))
         ->execute();
-
-    drupal_set_message(t('The given website has been scraped!'));
+    
+    drupal_set_message(t('The given website has been scraped with success!'));
 }
 
 /**
  * Function to implement website scraping.
  */
-function scrape_website_url($website_url) {
-    return $website_url . '_websiteScraped!';
+function scrape_website_url($website_url, $element_type, $class_name, $id_name) {
+    $html = file_get_contents($website_url);
+    $doc = new DOMDocument();
+    
+    $file = array();
+
+    libxml_use_internal_errors(TRUE);
+
+    if(!empty($html)) {
+
+        $doc->loadHTML($html);
+        libxml_clear_errors();
+        
+        $xpath = new DOMXPath($doc);
+    
+        if ($id_name != null) {
+            $row = $xpath->query('//'.$element_type.'[@id]');
+        } else if ($class_name != null) {
+            $row = $xpath->query('//'.$element_type.'[@class="'.$class_name.'"]');
+        } else {
+            $row = $xpath->query('//'.$element_type);
+        }
+
+        if($row->length > 0) {
+            foreach($row as $newrow){
+                array_push($file, $newrow->nodeValue . "<br/>");
+                foreach($file as $f) {
+                    drupal_set_message(t($f), 'warning');
+                    return $f;
+                }
+            }
+        }
+    }
+
+    // return $file;
 } 
+
+/**
+ * Adding a stylesheet.
+ */
+$path = drupal_get_path('module', 'vaariscraper') . '/css/main.css';
+drupal_add_css($path, 'file');
+
 ?>

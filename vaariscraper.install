@@ -29,6 +29,25 @@ function vaariscraper_schema() {
                 'not null' => TRUE,
                 'default' => '',
             ),
+            'element_type' => array(
+                'description' => 'The type of the element.',
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => TRUE,
+                'default' => '',
+            ),
+            'element_class' => array(
+                'description' => 'The optional class for an element.',
+                'type' => 'varchar',
+                'length' => 255,
+                'default' => '',
+            ),
+            'element_id' => array(
+                'description' => 'The optional ID for an element.',
+                'type' => 'varchar',
+                'length' => 255,
+                'default' => '',
+            ),
         ),
         'indexes' => array(
           'website_url_changed' => array('website_url'),
